@@ -1,0 +1,127 @@
+@startuml
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+skinparam nodesep 90
+skinparam ranksep 90
+left to right direction
+
+class App {
+  + main(args : String[]) : void
+  - inscribirEstudiantes(actividad:Actividad, estudiantes:List<Estudiante>) : void
+  - emitirCertificadoSiCorresponde(actividad:Actividad, estudiante:Estudiante) : void
+}
+
+package modelo {
+  class EventoUniversitario {
+    - Id : String <<final>>
+    - titulo : String
+    - costoBase : double
+    - gratuito : boolean
+    - sala : Sala
+    - actividades : List<Actividad>
+    {static} - cantidadEventos : int
+    + EventoUniversitario(id:String, nombre:String, costo:double, esGratuito:boolean)
+    + EventoUniversitario(otroEvento:EventoUniversitario)
+    + calcularCostoEstimado() : double
+    + asignarSala(sala:Sala) : void
+    + crearActividad(id:int, titulo:String, tipoActividad:char) : void
+    + getActividades() : List<Actividad>
+    + filtrarActividadesPorTipo<T extends Actividad>(tipo:Class<T>) : List<T>
+    + calcularCostoMateriales(actividades:List<? extends Actividad>) : double
+    + mostrarDatos() : void
+    + persistirEvento() : boolean
+    + recuperarEvento(id:String) : EventoUniversitario
+    {static} + getCantidadEventos() : int
+  }
+
+  class Sala {
+    - id : int
+    - nombre : String
+  }
+
+  class Estudiante {
+    - legajo : String
+    - nombre : String
+  }
+
+  class Inscripcion {
+    - actividad : Actividad
+    - estudiante : Estudiante
+    - fecha : LocalDate
+    - estado : String
+    + confirmar() : void
+  }
+}
+
+package "modelo.actividades" {
+  abstract class Actividad {
+    - id : int
+    - titulo : String
+    - cupoMaximo : int
+    - inscripciones : List<Inscripcion>
+    {static} + CUPO_MINIMO : int <<final>>
+    + inscribir(estudiante:Estudiante) : Inscripcion
+    + mostrarInscripciones() : void
+    + mostrarIdentificacion() : void <<final>>
+    {abstract} + calcularCostoMateriales() : double
+    {abstract} + getTipo() : String
+  }
+
+  class Charla {
+    - disertante : String
+    + calcularCostoMateriales() : double
+    + getTipo() : String
+  }
+
+  class Taller {
+    - requiereNotebook : boolean
+    + calcularCostoMateriales() : double
+    + getTipo() : String
+  }
+
+  class Curso {
+    - nivel : int
+    + calcularCostoMateriales() : double
+    + getTipo() : String
+    + generarCertificado(estudiante:Estudiante) : String
+  }
+}
+
+package "modelo.certificacion" {
+  interface Certificable {
+    ENTIDAD_EMISORA : String
+    generarCertificado(estudiante:Estudiante) : String
+  }
+}
+
+package excepciones {
+  class CupoExcedidoException
+}
+
+EventoUniversitario "1" o-right- "1" Sala : agrega
+EventoUniversitario "1" *-down- "1..*" Actividad : compone
+Actividad "1" --right-- "0..*" Estudiante : inscribe
+(Actividad, Estudiante) .. Inscripcion
+
+Actividad <|-- Charla
+Actividad <|-- Taller
+Actividad <|-- Curso
+Certificable <|.. Taller
+Certificable <|.. Curso
+
+Exception <|-- CupoExcedidoException
+Actividad ..> CupoExcedidoException : <<throws>>
+App ..> EventoUniversitario : usa
+App ..> Actividad : usa
+App ..> Estudiante : usa
+App ..> Certificable : usa
+
+note bottom of EventoUniversitario
+  Upgrade TP2 - Ejercicio 3:
+  los generics se incorporan en el evento,
+  que administra sus propias actividades.
+  - <T extends Actividad>
+  - List<? extends Actividad>
+end note
+
+@enduml
